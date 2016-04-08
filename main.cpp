@@ -26,6 +26,14 @@ struct annealing {
         return gmin_lastenergy;
     }
 
+    inline int get_gmin_step() const {
+        return gmin_step;
+    }
+
+    inline double get_gmin_temp() const {
+        return gmin_temp;
+    }
+
     inline const vector<pair<int,bool>> & get_things() const {
         return things;
     }
@@ -79,13 +87,16 @@ struct annealing {
         do_change(chg);
         int e_delta = calc_energy() - last_energy;
         int poss = RAND_MAX * exp(static_cast<double>(-e_delta)/temp);
-        if (e_delta <= 0 || e_delta > 0 && rand() < poss) {
+        //int poss = RAND_MAX;
+        if (e_delta < 0 || e_delta > 0 && rand() < poss) {
             last_energy += e_delta;
-        } else {
+        } else if (e_delta != 0) {
             undo_change(chg);
         }
 
         if (last_energy < gmin_lastenergy) {
+            gmin_step = step;
+            gmin_temp = temp;
             gmin_lastenergy = last_energy;
             copy(getgroup.begin(), getgroup.end(), gmin_getgroup.begin());
         }
@@ -109,11 +120,11 @@ private:
 
     int last_energy, gmin_lastenergy;
     int nthings, mgroups;
-    int step;
+    int step, gmin_step;
     vector<pair<int, bool>> things;
     vector<int> getgroup, gmin_getgroup;
     vector<int> groupsums;
-    double temp, start_temp;
+    double temp, start_temp, gmin_temp;
 
     int calc_energy() {
         auto mm = minmax_element(groupsums.begin(), groupsums.end());
@@ -145,6 +156,8 @@ private:
 
     inline double temp_fn(int step) const {
         return start_temp / static_cast<double>(0.0001 * step + 1); // 0.0001 smth like Temp. speed
+        //return start_temp * exp(-0.000001*step) * abs(sin(step*0.00001));
+        //return start_temp;
     }
 };
 
@@ -176,7 +189,9 @@ int main()
     }
 
     // yep bitches dis is fkin O(n^2)!!!
-    cout << "Global minima:" << endl;
+    cout << "Steps: " << ann.get_step() << endl;
+    cout << "Global minima: (at step " << ann.get_gmin_step() << ")" << endl;
+    cout << "  Temp: " << ann.get_gmin_temp() << endl;
     cout << "  Energy: " << ann.get_gmin_energy() << endl;
     auto gmgg = ann.get_gmin_getgroups();
     for (int i = 0; i < ann.get_mgroups(); ++i) {

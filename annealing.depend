@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1460097931 source:/home/vas/work/annealing/main.cpp
+1460100804 source:/home/vas/work/annealing/main.cpp
 	<iostream>
 	<cmath>
 	<cstdio>
