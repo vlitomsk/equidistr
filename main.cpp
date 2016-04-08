@@ -69,6 +69,7 @@ struct annealing {
     void first_state() {
         step = 0;
         fill(groupsums.begin(), groupsums.end(), 0);
+        //for (int i = 0, cur_group = 0, dg = 1; i < nthings; ++i, cur_group = rand() % mgroups) {
         for (int i = 0, cur_group = 0, dg = 1; i < nthings; ++i, cur_group += dg) {
             things[i].second = i < mgroups;
             groupsums[cur_group] += things[i].first;
@@ -87,18 +88,16 @@ struct annealing {
         do_change(chg);
         int e_delta = calc_energy() - last_energy;
         int poss = RAND_MAX * exp(static_cast<double>(-e_delta)/temp);
-        //int poss = RAND_MAX;
-        if (e_delta < 0 || e_delta > 0 && rand() < poss) {
+        if (e_delta < 0 || e_delta > 0 && poss && rand() < poss) {
             last_energy += e_delta;
+            if (last_energy < gmin_lastenergy) {
+                gmin_step = step;
+                gmin_temp = temp;
+                gmin_lastenergy = last_energy;
+                copy(getgroup.begin(), getgroup.end(), gmin_getgroup.begin());
+            }
         } else if (e_delta != 0) {
             undo_change(chg);
-        }
-
-        if (last_energy < gmin_lastenergy) {
-            gmin_step = step;
-            gmin_temp = temp;
-            gmin_lastenergy = last_energy;
-            copy(getgroup.begin(), getgroup.end(), gmin_getgroup.begin());
         }
 
         ++step;
@@ -129,7 +128,13 @@ private:
     int calc_energy() {
         auto mm = minmax_element(groupsums.begin(), groupsums.end());
         return *mm.second - *mm.first;
-        //return *max_element(groupsums.begin(), groupsums.end()) - *min_element(groupsums.begin(), groupsums.end());
+        int nrgy = 0;
+        for (int i = 0; i < mgroups; ++i) {
+            for (int j = i + 1; j < mgroups; ++j) {
+                nrgy += abs(groupsums[i] - groupsums[j]);
+            }
+        }
+        return nrgy;
     }
 
     struct change_t {
@@ -155,7 +160,7 @@ private:
     }
 
     inline double temp_fn(int step) const {
-        return start_temp / static_cast<double>(0.0001 * step + 1); // 0.0001 smth like Temp. speed
+        return start_temp / static_cast<double>(0.00001 * step + 1); // 0.0001 smth like Temp. speed
         //return start_temp * exp(-0.000001*step) * abs(sin(step*0.00001));
         //return start_temp;
     }
@@ -181,9 +186,8 @@ int main()
     ann.first_state();
     ann.set_start_temp(7000); // 7000 is comparable with weight => exp(-dE/T) won't be too small at most Temps
     while (!stop && !ann.done()) {
-        if (ann.get_step() % 1000 == 1) {
+        if (ann.get_step() % 100000 == 1) {
             cout << "energy: " << ann.get_energy() << endl;
-            usleep(1000);
         }
         ann.do_step();
     }
