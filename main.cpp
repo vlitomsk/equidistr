@@ -49,8 +49,7 @@ struct annealing {
             in >> t;
             things.push_back({t, false});
         }
-        sort(things.begin(), things.end());
-        reverse(things.begin(), things.end());
+        sort(things.begin(), things.end(), [](const pair<int,bool> &a, const pair<int,bool> &b) { return a.first>b.first; });
 
         return in;
     }
@@ -117,10 +116,9 @@ private:
     double temp, start_temp;
 
     int calc_energy() {
-        //auto mm = minmax_element(groupsums.begin(), groupsums.end());
-
-        //return *mm.second - *mm.first;
-        return *max_element(groupsums.begin(), groupsums.end()) - *min_element(groupsums.begin(), groupsums.end());
+        auto mm = minmax_element(groupsums.begin(), groupsums.end());
+        return *mm.second - *mm.first;
+        //return *max_element(groupsums.begin(), groupsums.end()) - *min_element(groupsums.begin(), groupsums.end());
     }
 
     struct change_t {
@@ -146,7 +144,7 @@ private:
     }
 
     inline double temp_fn(int step) const {
-        return start_temp / static_cast<double>(0.0001 * step + 1);
+        return start_temp / static_cast<double>(0.0001 * step + 1); // 0.0001 smth like Temp. speed
     }
 };
 
@@ -168,7 +166,7 @@ int main()
     annealing ann;
     ann.read(cin);
     ann.first_state();
-    ann.set_start_temp(7000);
+    ann.set_start_temp(7000); // 7000 is comparable with weight => exp(-dE/T) won't be too small at most Temps
     while (!stop && !ann.done()) {
         if (ann.get_step() % 1000 == 1) {
             cout << "energy: " << ann.get_energy() << endl;
@@ -177,6 +175,7 @@ int main()
         ann.do_step();
     }
 
+    // yep bitches dis is fkin O(n^2)!!!
     cout << "Global minima:" << endl;
     cout << "  Energy: " << ann.get_gmin_energy() << endl;
     auto gmgg = ann.get_gmin_getgroups();
